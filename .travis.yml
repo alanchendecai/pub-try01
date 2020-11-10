@@ -1,0 +1,24 @@
+sudo: required
+language: generic
+
+services:
+  - docker
+
+before_install:
+  - docker build -t alanchendecai/pub-test -f ./spa_app/Dockerfile.dev ./spa_app
+
+script:
+  - docker run -e CI=true alanchendecai/pub-test npm test
+
+after_success:
+  - docker build -t alanchendecai/pub-spa-app ./spa_app
+  - docker build -t alanchendecai/pub-svc-proxy ./svc_proxy
+  - docker build -t alanchendecai/pub-api-app ./api_app
+  - docker build -t alanchendecai/pub-wkr-app ./wkr_app
+  # Log in to the docker CLI
+  - echo "$dkr_pwd" | docker login -u "$dkr_uid" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push alanchendecai/pub-spa-app
+  - docker push alanchendecai/pub-svc-proxy
+  - docker push alanchendecai/pub-api-app
+  - docker push alanchendecai/pub-wkr-app

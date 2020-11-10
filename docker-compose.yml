@@ -1,0 +1,73 @@
+version: '3'
+services:
+    spa-app:
+        container_name: 'spa-app'
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./spa_app
+        volumes:
+            - /app/node_modules
+            - ./spa_app:/app
+        stdin_open: true
+
+    api-app:
+        container_name: 'api-app'
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./api_app
+        volumes:
+            - /app/node_modules
+            - ./api_app:/app
+        environment:
+            - red_host=svc-redis
+            - red_port=6379
+            - red_pwd=pwd_redis
+            - pg_host=svc-postgres
+            - pg_port=5432
+            - pg_uid=postgres
+            - pg_pwd=postgres_password
+            - pg_db=postgres
+
+    wkr-app:
+        container_name: 'wkr-app'
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./wkr_app
+        volumes:
+            - /app/node_modules
+            - ./wkr_app:/app
+        environment:
+            - red_host=svc-redis
+            - red_port=6379
+            - red_pwd=pwd_redis
+
+    svc-proxy:
+        container_name: 'svc-proxy'
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./svc_proxy
+        ports:
+            - '3050:80'
+        depends_on:
+            - api-app
+            - spa-app
+        restart: unless-stopped
+
+    svc-redis:
+          container_name: 'svc-redis'
+          image: 'redis:latest'
+    #       command: redis-server --requirepass pwd_redis
+          ports:
+               - '6379:6379'
+          restart: unless-stopped
+
+    svc-postgres:
+        container_name: 'svc-postgres'
+        image: 'postgres:latest'
+        environment:
+    #         - POSTGRES_USER=uid_postgres
+            - POSTGRES_PASSWORD=postgres_password
+    #         - POSTGRES_DB=db_postgres
+        ports:
+            - '5432:5432'
+        restart: unless-stopped
